@@ -1,0 +1,113 @@
+.home-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  background: linear-gradient(135deg, rgba(255,111,163,0.06) 0%, rgba(255,156,207,0.04) 100%);
+  .home-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: linear-gradient(135deg, var(--pale-green) 0%, var(--light-green) 100%);
+    min-height: 100vh;
+  }
+
+  .home-content {
+    text-align: center;
+  }
+
+  .home-title {
+    font-size: 4rem;
+    font-weight: 700;
+    color: var(--dark-green);
+    margin-bottom: 1rem;
+    letter-spacing: -1px;
+  }
+
+  .amp-symbol {
+    font-style: italic;
+    margin: 0 0.5rem;
+    color: var(--primary-green);
+  }
+
+  .home-subtitle {
+    font-size: 1.5rem;
+    color: var(--text-light);
+    margin-bottom: 3rem;
+    font-weight: 300;
+  }
+
+  .home-nav {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .nav-button {
+    display: inline-block;
+    padding: 1rem 2.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    color: var(--text-dark);
+    background-color: var(--primary-green);
+    border: 2px solid var(--primary-green);
+  }
+
+  .nav-button:hover {
+    background-color: var(--dark-green);
+    color: var(--white);
+    border-color: var(--dark-green);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(90, 143, 111, 0.2);
+  }
+
+  .rsvp-btn {
+    background-color: var(--primary-green);
+  }
+
+  .registry-btn {
+    background-color: var(--light-green);
+    border-color: var(--light-green);
+  }
+
+  .registry-btn:hover {
+    background-color: var(--primary-green);
+    border-color: var(--primary-green);
+  }
+
+  @media (max-width: 600px) {
+    .home-title {
+      font-size: 2.5rem;
+    }
+
+    .home-subtitle {
+      font-size: 1.1rem;
+    }
+
+    .home-nav {
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .nav-button {
+      width: 100%;
+    }
+    font-size: 1.05rem;
+  }
+
+  .home-nav {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .nav-button {
+    width: 100%;
+  }
+}
