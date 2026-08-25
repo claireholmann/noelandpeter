@@ -13,16 +13,19 @@
 //     - Who has access: Anyone
 //  6. Copy the Web App URL and paste it into RSVP.jsx as SCRIPT_URL
 //
-//  SHEET COLUMN ORDER (columns A–O, header row in row 1):
+//  SHEET COLUMN ORDER (header row in row 1):
 //  A  Name
-//  B  Guest                 ← comma-separated household members for grouping: "Megan Becksmith, Adam Becksmith"
-//  C  Search Aliases        ← alternate names/nicknames for matching: "joey, joe, joey-b"
-//  D  Reception RSVP
-//  E  Meal Choice
-//  F  Food Allergies
-//  G  Song Requests
-//  H  Message to Couple
-//  I  Submitted At
+//  B  Guest                 ← comma-separated household members for grouping
+//  C  Search Aliases        ← alternate names/nicknames for matching
+//  D  Invited to Rehearsal? ← YES enables the rehearsal RSVP section
+//  E  Rehearsal RSVP
+//  F  Ceremony RSVP
+//  G  Reception RSVP
+//  H  Meal Choice
+//  I  Food Allergies
+//  J  Song Requests
+//  K  Message to Couple
+//  L  Submitted At
 
 
 const SHEET_NAME        = 'RSVP';            
@@ -32,12 +35,15 @@ const C = {
   NAME:                  0,
   GUEST:                 1,
   ALIASES:               2,
-  RECEPTION_RSVP:        3,
-  MEAL:                  4,
-  FOOD_ALLERGIES:        5,
-  SONG_REQUESTS:         6,
-  MESSAGE:               7,
-  SUBMITTED_AT:          8,
+  INVITED_TO_REHEARSAL:  3,
+  REHEARSAL_RSVP:       4,
+  CEREMONY_RSVP:        5,
+  RECEPTION_RSVP:        6,
+  MEAL:                  7,
+  FOOD_ALLERGIES:        8,
+  SONG_REQUESTS:         9,
+  MESSAGE:              10,
+  SUBMITTED_AT:         11,
 };
 
 // ─── Router ──────────────────────────────────────────────────
@@ -196,6 +202,8 @@ function lookup(query) {
 
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
   const rows  = sheet.getDataRange().getValues();
+  const rehearsalInviteColumnIndex = getHeaderColumnIndex(sheet, 'Invited to Rehearsal?');
+  const rehearsalRsvpColumnIndex = getHeaderColumnIndex(sheet, 'Rehearsal RSVP');
 
   // Build fast lookup maps once per request.
   const rowIndexByName = new Map();
@@ -291,13 +299,8 @@ function lookup(query) {
       .split(',')
       .map((a) => a.trim())
       .filter(Boolean);
-    const aliasMembers = String(matchedRow[C.ALIASES] || '')
-      .split(',')
-      .map((a) => a.trim())
-      .filter(Boolean);
-
-    // Prefer Guest whenever present (including a single plus-one), otherwise fallback to Aliases.
-    const householdMembers = guestMembers.length > 0 ? guestMembers : aliasMembers;
+    // Aliases are search-only; never add them to the displayed household.
+    const householdMembers = guestMembers;
 
     const familyMembers = [];
     const seenRowIndices = new Set();
@@ -309,9 +312,13 @@ function lookup(query) {
       familyMembers.push({
         rowIndex,
         name: String(row[C.NAME]),
+        invitedToRehearsal: rehearsalInviteColumnIndex >= 0
+          && String(row[rehearsalInviteColumnIndex] || '').trim().toUpperCase() === 'YES',
         alreadySubmitted: !!row[C.SUBMITTED_AT],
         existing: {
+          ceremonyRsvp: String(row[C.CEREMONY_RSVP] || ''),
           receptionRsvp: String(row[C.RECEPTION_RSVP] || ''),
+          rehearsalRsvp: rehearsalRsvpColumnIndex >= 0 ? String(row[rehearsalRsvpColumnIndex] || '') : '',
           meal: String(row[C.MEAL] || ''),
           foodAllergies: String(row[C.FOOD_ALLERGIES] || ''),
         },
@@ -336,9 +343,12 @@ function lookup(query) {
             familyMembers.push({
               rowIndex: -1,
               name: guestNameOnly,
+              invitedToRehearsal: false,
               alreadySubmitted: false,
               existing: {
+                ceremonyRsvp: '',
                 receptionRsvp: '',
+                rehearsalRsvp: '',
                 meal: '',
                 foodAllergies: '',
               },
@@ -355,9 +365,13 @@ function lookup(query) {
       familyMembers.push({
         rowIndex: householdRowIndex,
         name: String(row[C.NAME]),
+        invitedToRehearsal: rehearsalInviteColumnIndex >= 0
+          && String(row[rehearsalInviteColumnIndex] || '').trim().toUpperCase() === 'YES',
         alreadySubmitted: !!row[C.SUBMITTED_AT],
         existing: {
+          ceremonyRsvp: String(row[C.CEREMONY_RSVP] || ''),
           receptionRsvp: String(row[C.RECEPTION_RSVP] || ''),
+          rehearsalRsvp: rehearsalRsvpColumnIndex >= 0 ? String(row[rehearsalRsvpColumnIndex] || '') : '',
           meal: String(row[C.MEAL] || ''),
           foodAllergies: String(row[C.FOOD_ALLERGIES] || ''),
         },
@@ -414,6 +428,7 @@ function submitRsvp(p) {
   const timestamp = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
   const guestNameColumnIndex = getHeaderColumnIndex(sheet, 'Guest Name');
   const guestRsvpColumnIndex = getHeaderColumnIndex(sheet, 'Guest RSVP');
+  const rehearsalRsvpColumnIndex = getHeaderColumnIndex(sheet, 'Rehearsal RSVP');
 
   const headerCheck = validateSheetHeaders(sheet);
   if (!headerCheck.ok) {
@@ -436,14 +451,18 @@ function submitRsvp(p) {
     // Skip placeholder members that have no sheet row (rowIndex === -1).
     if (member.rowIndex === -1) continue;
     const mKey = `member_${member.rowIndex}`;
+    const ceremonyRsvp = p[`${mKey}_ceremonyRsvp`] || '';
     writePersonRow(sheet, member.rowIndex, {
+      ceremonyRsvp,
       receptionRsvp:      p[`${mKey}_receptionRsvp`]  || '',
+      rehearsalRsvp:      p[`${mKey}_rehearsalRsvp`]  || '',
       meal:               p[`${mKey}_meal`]           || '',
       foodAllergies:      p[`${mKey}_foodAllergies`]  || '',
       guestName:          guestName,
       guestRsvp:          p.guestRsvp || '',
       guestNameColumnIndex,
       guestRsvpColumnIndex,
+      rehearsalRsvpColumnIndex,
       timestamp,
       isGuest:            isGuestName(member.name),
     });
@@ -494,7 +513,7 @@ function writePersonRow(sheet, rowIndex, data) {
   const sheetRow = rowIndex + 1; // 0-based → 1-based
 
   const existingRow = sheet
-    .getRange(sheetRow, 1, 1, C.SUBMITTED_AT + 1)
+    .getRange(sheetRow, 1, 1, sheet.getLastColumn())
     .getValues()[0];
 
   const pick = (incoming, existingColIndex) => {
@@ -504,10 +523,18 @@ function writePersonRow(sheet, rowIndex, data) {
   };
 
   const updates = [
+    [C.CEREMONY_RSVP  + 1, pick(data.ceremonyRsvp, C.CEREMONY_RSVP)   ],
     [C.RECEPTION_RSVP + 1, pick(data.receptionRsvp, C.RECEPTION_RSVP) ],
     [C.MEAL           + 1, pick(data.meal, C.MEAL)                     ],
     [C.FOOD_ALLERGIES + 1, pick(data.foodAllergies, C.FOOD_ALLERGIES)  ],
   ];
+
+  if (data.rehearsalRsvpColumnIndex >= 0) {
+    updates.push([
+      data.rehearsalRsvpColumnIndex + 1,
+      pick(data.rehearsalRsvp, data.rehearsalRsvpColumnIndex),
+    ]);
+  }
 
   // If this is a guest row and guest name was provided, update ONLY the name cell
   if (data.guestName && data.isGuest) {
@@ -531,6 +558,9 @@ function validateSheetHeaders(sheet) {
     'Name',
     'Guest',
     'Search Aliases',
+    'Invited to Rehearsal?',
+    'Rehearsal RSVP',
+    'Ceremony RSVP',
     'Reception RSVP',
     'Meal Choice',
     'Food Allergies',
@@ -650,7 +680,7 @@ function sendGuestCopyEmail(p, members) {
   const timestamp = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
   const htmlBody = buildRsvpHtmlEmail({
     headerLabel: 'Your RSVP is confirmed',
-    subLabel: 'We can\'t wait to celebrate with you in South Bend.',
+    subLabel: 'We can\'t wait to celebrate with you in Chicago',
     householdNames,
     timestamp,
     p,
@@ -660,7 +690,7 @@ function sendGuestCopyEmail(p, members) {
 
   MailApp.sendEmail({
     to:       guestEmail,
-    subject:  `Your RSVP — Claire & Brian`,
+    subject:  `Your RSVP — Noel & Peter`,
     body:     buildRsvpPlainText(householdNames, timestamp, p, members),
     htmlBody,
   });
@@ -687,87 +717,102 @@ function buildRsvpPlainText(householdNames, timestamp, p, members) {
 
 function buildRsvpHtmlEmail({ headerLabel, subLabel, householdNames, timestamp, p, members, isGuestCopy }) {
   const rsvpBadge = (val) => {
-    if (!val || val === '—') return '<span style="color:#9ca3af;">—</span>';
+    if (!val || val === '—') return '<span style="color:#58635a;">—</span>';
     const yes = val === 'Yes';
-    const color = yes ? '#6c8b19' : '#b00020';
-    const bg    = yes ? '#f0f5e8' : '#fdf2f2';
-    return `<span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600;letter-spacing:0.05em;background:${bg};color:${color};">${val}</span>`;
+    const color = yes ? '#ffffff' : '#58635a';
+    const bg = yes ? '#40553f' : '#f9f5ee';
+    const border = yes ? '#c39d5a' : '#e9dcc2';
+    const mark = yes ? ' ✓' : '';
+    return `<span style="display:inline-block;padding:4px 10px;border:1px solid ${border};border-radius:2px;font-family:Montserrat,Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;background:${bg};color:${color};">${val}${mark}</span>`;
   };
 
-  const esc = (s) => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const esc = (s) => String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 
   let memberRows = '';
   for (const member of members) {
     const mKey = `member_${member.rowIndex}`;
     const mealRow = p[`${mKey}_meal`]
-      ? `<tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Meal</td><td style="padding:6px 0;text-align:right;color:#003256;font-size:13px;">${esc(p[`${mKey}_meal`])}</td></tr>` : '';
+      ? `<tr><td style="padding:6px 0;color:#58635a;font-size:13px;">Meal</td><td style="padding:6px 0;text-align:right;color:#2d3d2f;font-size:13px;">${esc(p[`${mKey}_meal`])}</td></tr>` : '';
     const allergyRow = p[`${mKey}_foodAllergies`]
-      ? `<tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Allergies</td><td style="padding:6px 0;text-align:right;color:#003256;font-size:13px;">${esc(p[`${mKey}_foodAllergies`])}</td></tr>` : '';
+      ? `<tr><td style="padding:6px 0;color:#58635a;font-size:13px;">Dietary needs</td><td style="padding:6px 0;text-align:right;color:#2d3d2f;font-size:13px;">${esc(p[`${mKey}_foodAllergies`])}</td></tr>` : '';
+
+    const eventRows = [
+      ['Rehearsal Dinner', p[`${mKey}_rehearsalRsvp`]],
+      ['Ceremony', p[`${mKey}_ceremonyRsvp`]],
+      ['Reception', p[`${mKey}_receptionRsvp`]],
+    ]
+      .filter(([, value]) => value)
+      .map(([label, value]) => `<tr><td style="padding:6px 0;color:#58635a;font-size:13px;">${label}</td><td style="padding:6px 0;text-align:right;">${rsvpBadge(value)}</td></tr>`)
+      .join('');
 
     memberRows += `
-      <div style="margin-bottom:20px;">
-        <div style="font-family:Georgia,serif;font-size:15px;font-weight:600;color:#003256;border-bottom:1px solid #e5e7eb;padding-bottom:6px;margin-bottom:8px;">${esc(member.name)}</div>
-        <table width="100%" cellpadding="0" cellspacing="0" style="font-family:Arial,sans-serif;">
-          <tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Reception</td><td style="padding:6px 0;text-align:right;">${rsvpBadge(p[`${mKey}_receptionRsvp`])}</td></tr>
+      <div style="margin-bottom:22px;">
+        <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:20px;font-weight:600;color:#2d3d2f;border-bottom:1px solid #e9dcc2;padding-bottom:6px;margin-bottom:8px;">${esc(member.name)}</div>
+        <table width="100%" cellpadding="0" cellspacing="0" style="font-family:Montserrat,Arial,sans-serif;">
+          ${eventRows}
           ${mealRow}${allergyRow}
         </table>
       </div>`;
   }
 
   const guestRow = p.guestName
-    ? `<tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Guest</td><td style="padding:6px 0;text-align:right;color:#003256;font-size:13px;">${esc(p.guestName)}</td></tr>`
+    ? `<tr><td style="padding:6px 0;color:#58635a;font-size:13px;">Guest</td><td style="padding:6px 0;text-align:right;color:#2d3d2f;font-size:13px;">${esc(p.guestName)}</td></tr>`
     : '';
   const guestRsvpRow = p.guestRsvp
-    ? `<tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Guest RSVP</td><td style="padding:6px 0;text-align:right;color:#003256;font-size:13px;">${esc(p.guestRsvp)}</td></tr>`
+    ? `<tr><td style="padding:6px 0;color:#58635a;font-size:13px;">Guest RSVP</td><td style="padding:6px 0;text-align:right;color:#2d3d2f;font-size:13px;">${esc(p.guestRsvp)}</td></tr>`
     : '';
   const notesSection = (p.songRequests || p.message || guestRow || guestRsvpRow) ? `
       <div style="margin-bottom:20px;">
-        <div style="font-family:Georgia,serif;font-size:15px;font-weight:600;color:#003256;border-bottom:1px solid #e5e7eb;padding-bottom:6px;margin-bottom:8px;">Notes</div>
-        <table width="100%" cellpadding="0" cellspacing="0" style="font-family:Arial,sans-serif;">
+        <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:20px;font-weight:600;color:#2d3d2f;border-bottom:1px solid #e9dcc2;padding-bottom:6px;margin-bottom:8px;">Notes</div>
+        <table width="100%" cellpadding="0" cellspacing="0" style="font-family:Montserrat,Arial,sans-serif;">
           ${guestRow}
           ${guestRsvpRow}
-          ${p.songRequests ? `<tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Song Request</td><td style="padding:6px 0;text-align:right;color:#003256;font-size:13px;">${esc(p.songRequests)}</td></tr>` : ''}
-          ${p.message ? `<tr><td style="padding:6px 0;color:#6b7280;font-size:13px;">Message</td><td style="padding:6px 0;text-align:right;color:#003256;font-size:13px;">${esc(p.message)}</td></tr>` : ''}
+          ${p.songRequests ? `<tr><td style="padding:6px 0;color:#58635a;font-size:13px;">Song Request</td><td style="padding:6px 0;text-align:right;color:#2d3d2f;font-size:13px;">${esc(p.songRequests)}</td></tr>` : ''}
+          ${p.message ? `<tr><td style="padding:6px 0;color:#58635a;font-size:13px;">Message</td><td style="padding:6px 0;text-align:right;color:#2d3d2f;font-size:13px;">${esc(p.message)}</td></tr>` : ''}
         </table>
       </div>` : '';
 
   const subLabelHtml = subLabel
-    ? `<p style="margin:8px 0 0;font-family:Arial,sans-serif;font-size:14px;color:#65b8d4;">${esc(subLabel)}</p>`
-    : `<p style="margin:8px 0 0;font-family:Arial,sans-serif;font-size:13px;color:#9ca3af;">Submitted ${esc(timestamp)}</p>`;
+    ? `<p style="margin:8px 0 0;font-family:Montserrat,Arial,sans-serif;font-size:13px;color:#f9f5ee;">${esc(subLabel)}</p>`
+    : `<p style="margin:8px 0 0;font-family:Montserrat,Arial,sans-serif;font-size:12px;color:#e9dcc2;">Submitted ${esc(timestamp)}</p>`;
 
   const footerNote = isGuestCopy
-    ? 'Questions? Reach us at <a href="mailto:thekoschs@gmail.com" style="color:#65b8d4;">thekoschs@gmail.com</a>'
+    ? 'Questions? Reach us at <a href="mailto:thekoschs@gmail.com" style="color:#40553f;">thekoschs@gmail.com</a>'
     : `Submitted: ${esc(timestamp)}`;
 
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f3f4f6;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 16px;">
+<body style="margin:0;padding:0;background:#edf4e8;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#edf4e8;padding:32px 16px;">
     <tr><td align="center">
-      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:10px;overflow:hidden;box-shadow:0 2px 16px rgba(0,50,86,0.10);">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#f9f5ee;border:1px solid #c39d5a;box-shadow:inset 0 0 0 2px rgba(195,157,90,0.24);">
 
         <!-- Header -->
-        <tr><td style="background:#003256;padding:32px 32px 24px;text-align:center;">
-          <p style="margin:0 0 6px;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;color:#65b8d4;">Claire &amp; Brian · June 26th, 2027</p>
-          <h1 style="margin:0;font-family:Georgia,serif;font-size:26px;font-weight:400;color:#ffffff;letter-spacing:0.05em;">${esc(headerLabel)}</h1>
+        <tr><td style="background:#40553f;padding:32px 32px 24px;text-align:center;">
+          <p style="margin:0 0 6px;font-family:Montserrat,Arial,sans-serif;font-size:11px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:#e9dcc2;">Noel &amp; Peter · April 2, 2027</p>
+          <h1 style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:32px;font-weight:500;color:#f9f5ee;letter-spacing:0.04em;">${esc(headerLabel)}</h1>
           ${subLabelHtml}
         </td></tr>
 
         <!-- Household name band -->
-        <tr><td style="background:#6c8b19;padding:10px 32px;">
-          <p style="margin:0;font-family:Arial,sans-serif;font-size:13px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#ffffff;">${esc(householdNames)}</p>
+        <tr><td style="background:#e9dcc2;padding:10px 32px;">
+          <p style="margin:0;font-family:Montserrat,Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#2d3d2f;">${esc(householdNames)}</p>
         </td></tr>
 
         <!-- Body -->
-        <tr><td style="padding:28px 32px 8px;">
+        <tr><td style="padding:30px 32px 8px;">
           ${memberRows}
           ${notesSection}
         </td></tr>
 
         <!-- Footer -->
-        <tr><td style="padding:20px 32px 28px;border-top:1px solid #e5e7eb;">
-          <p style="margin:0;font-family:Arial,sans-serif;font-size:12px;color:#9ca3af;text-align:center;">${footerNote}</p>
+        <tr><td style="padding:20px 32px 28px;border-top:1px solid #e9dcc2;">
+          <p style="margin:0;font-family:Montserrat,Arial,sans-serif;font-size:12px;color:#58635a;text-align:center;">${footerNote}</p>
         </td></tr>
 
       </table>

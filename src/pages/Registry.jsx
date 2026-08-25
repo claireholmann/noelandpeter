@@ -12,36 +12,27 @@ function Registry() {
   return (
     <div className="registry-container">
       <div className="page-hero">
-        <h1 className="page-hero-title">Registry</h1>
+        <h1 className="page-hero-title">Our Registry</h1>
         <div className="page-hero-divider" />
-      </div>
+        <div className="registry-content">
+          <p className="registry-intro">
+            Your presence at our wedding is the greatest gift, but if you'd like to give something, 
+            here are a few items we love:
+          </p>
 
-      <div className="registry-content">
-        <p className="registry-intro">
-          Your presence at our wedding is the greatest gift, but if you'd like to give something, 
-          here are a few places where we're registered:
-        </p>
-
-        <div className="registry-grid">
-          {registries.map((registry, idx) => (
-            <a
-              key={idx}
-              href={registry.url}
-              className="registry-card"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <div className="registry-icon">{registry.icon}</div>
-              <h3 className="registry-name">{registry.name}</h3>
-              <p className="registry-cta">View Registry →</p>
-            </a>
-          ))}
-        </div>
-
-        <div className="registry-footer">
-          <Link to="/" className="back-home">
-            Back to Home
-          </Link>
+          <div className="registry-grid">
+            {registries.map((registry, idx) => (
+              <a
+                key={idx}
+                href={registry.url}
+                className="registry-card"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <p className="registry-cta">View Registry →</p>
+              </a>
+            ))}
+          </div>
         </div>
       </div>
     </div>

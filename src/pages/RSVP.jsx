@@ -18,19 +18,21 @@ const MEAL_OPTIONS = [
 
 const EVENTS = [
   {
+    key: 'rehearsalRsvp',
+    title: 'Rehearsal Dinner',
+    date: 'Thursday, April 1, 2027',
+    conditional: (member) => member.invitedToRehearsal,
+  },
+  {
     key: 'ceremonyRsvp',
     title: 'Ceremony',
-    date: 'Saturday, June 26th, 2027',
-    time: '2:00 PM',
-    location: 'TBD',
+    date: 'Friday, April 2, 2027',
     conditional: () => true,
   },
   {
     key: 'receptionRsvp',
     title: 'Reception',
-    date: 'Saturday, June 26th, 2027',
-    time: '5:30 PM',
-    location: 'TBD',
+    date: 'Friday, April 2, 2027',
     conditional: () => true,
   },
 ];
@@ -124,9 +126,7 @@ function EventCard({ event, members, setMemberField }) {
       <div className="event-section-header">
         <h3 className="event-section-title">{event.title}</h3>
         <div className="event-section-meta">
-          {event.date && <p className="event-section-desc"><strong>Date:</strong> {event.date}</p>}
-          {event.time && <p className="event-section-desc"><strong>Time:</strong> {event.time}</p>}
-          {event.location && <p className="event-section-desc"><strong>Location:</strong> {event.location}</p>}
+          {event.date && <p className="event-section-desc">{event.date}</p>}
         </div>
       </div>
       <div className="event-attendees">
@@ -438,11 +438,13 @@ function RSVP() {
       rowIndex: m.rowIndex,
       name: formatGuestDisplayName(m.name),
       displayName: formatGuestDisplayName(m.name),
+      invitedToRehearsal: m.invitedToRehearsal === true,
       hasGuest: hasGuestInName(m.name),
       alreadySubmitted: m.alreadySubmitted,
       form: {
         ceremonyRsvp: m.existing?.ceremonyRsvp || '',
         receptionRsvp: m.existing?.receptionRsvp || '',
+        rehearsalRsvp: m.existing?.rehearsalRsvp || '',
         meal: m.existing?.meal || '',
         foodAllergies: m.existing?.foodAllergies || '',
       },
@@ -492,6 +494,9 @@ function RSVP() {
       const m = member.form;
       if (!m.ceremonyRsvp) return `Please answer Ceremony for ${member.name}.`;
       if (!m.receptionRsvp) return `Please answer Reception for ${member.name}.`;
+      if (member.invitedToRehearsal && !m.rehearsalRsvp) {
+        return `Please answer Rehearsal Dinner for ${member.name}.`;
+      }
       if (m.receptionRsvp === 'Yes' && !m.meal)
         return `Please select a meal for ${member.name}.`;
     }
@@ -531,6 +536,7 @@ function RSVP() {
         const mKey = `member_${member.rowIndex}`;
         params.append(`${mKey}_ceremonyRsvp`, member.form.ceremonyRsvp);
         params.append(`${mKey}_receptionRsvp`, member.form.receptionRsvp);
+        params.append(`${mKey}_rehearsalRsvp`, member.form.rehearsalRsvp);
         params.append(`${mKey}_meal`, member.form.meal);
         params.append(`${mKey}_foodAllergies`, member.form.foodAllergies);
       }
@@ -583,11 +589,9 @@ function RSVP() {
     return (
       <div className="rsvp-container">
         <div className="page-hero">
-          <span className="page-eyebrow">Noel <span className="amp-symbol">&</span> Peter · June 26th, 2027</span>
+          <span className="page-eyebrow">Noel <span className="amp-symbol">&</span> Peter · April 2, 2027</span>
           <h1 className="page-hero-title">RSVP</h1>
           <div className="page-hero-divider" />
-        </div>
-        <div className="rsvp-content">
           <div className="success-message">
             <div className="success-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" focusable="false" xmlns="http://www.w3.org/2000/svg">
@@ -608,20 +612,14 @@ function RSVP() {
   return (
     <div className="rsvp-container">
       <div className="page-hero">
-        <span className="page-eyebrow">Noel <span className="amp-symbol">&</span> Peter · June 26th, 2027</span>
+        <span className="page-eyebrow">Noel <span className="amp-symbol">&</span> Peter · April 2, 2027</span>
         <h1 className="page-hero-title">RSVP</h1>
         <div className="page-hero-divider" />
-      </div>
-
-      <div className="rsvp-content">
-        <p className="rsvp-intro">
-          Enter any household member name to find your invitation and submit your response.
-        </p>
 
         {!household && (
           <div className="rsvp-lookup">
             <form onSubmit={handleSearch}>
-              <div className="form-group">
+              <div className="form-group hero-search-group">
                 <label htmlFor="searchQuery">Find Your Invitation</label>
                 <div className="search-input-row">
                   <input
@@ -702,34 +700,88 @@ function RSVP() {
               </button>
             </div>
 
-            {EVENTS
-              .filter((event) => form.members.some((member) => event.conditional(member)))
-              .map((event) => (
-                <EventCard
-                  key={event.key}
-                  event={event}
-                  members={form.members}
-                  setMemberField={setMemberField}
-                />
-              ))}
+          {EVENTS
+            .filter((event) => form.members.some((member) => event.conditional(member)))
+            .map((event) => (
+              <EventCard
+                key={event.key}
+                event={event}
+                members={form.members}
+                setMemberField={setMemberField}
+              />
+            ))}
 
-            {/* Guest name — only shown when a guest placeholder is in the household */}
-            {form.members.some((m) => m.hasGuest) && (
-              <div className="event-section">
-                <div className="event-section-header">
-                  <h3 className="event-section-title">Guest Information</h3>
-                </div>
-                <div className="guest-info-section">
-                  {form.members.filter((m) => m.hasGuest).map((member) => (
-                    <div key={member.rowIndex} className="form-group guest-entry-group">
-                      <label htmlFor={`guestName_${member.rowIndex}`}>{member.name}&apos;s Guest Name</label>
+          {/* Guest name — only shown when a guest placeholder is in the household */}
+          {form.members.some((m) => m.hasGuest) && (
+            <div className="event-section">
+              <div className="event-section-header">
+                <h3 className="event-section-title">Guest Information</h3>
+              </div>
+              <div className="guest-info-section">
+                {form.members.filter((m) => m.hasGuest).map((member) => (
+                  <div key={member.rowIndex} className="form-group guest-entry-group">
+                    <label htmlFor={`guestName_${member.rowIndex}`}>{member.name}&apos;s Guest Name</label>
+                    <input
+                      type="text"
+                      id={`guestName_${member.rowIndex}`}
+                      value={form.shared.guestName || ''}
+                      onChange={(e) => setSharedField('guestName', e.target.value)}
+                      placeholder="Enter your guest's full name"
+                      autoComplete="name"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {form.members.some(m => m.form.receptionRsvp === 'Yes') && (
+            <div className="event-section">
+              <div className="event-section-header">
+                <h3 className="event-section-title">Meal Selection</h3>
+              </div>
+              <div className="meal-selections">
+                {form.members
+                  .filter(member => member.form.receptionRsvp === 'Yes')
+                  .map((member) => (
+                    <div key={member.rowIndex} className="form-group meal-group">
+                      <label htmlFor={`meal_${member.rowIndex}`}>Meal for {member.name}</label>
+                      <select
+                        id={`meal_${member.rowIndex}`}
+                        value={member.form.meal}
+                        onChange={(e) => setMemberField(member.rowIndex, 'meal', e.target.value)}
+                      >
+                        {MEAL_OPTIONS.map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {form.members.some(member =>
+            member.form.receptionRsvp === 'Yes' || member.form.rehearsalRsvp === 'Yes'
+          ) && (
+            <div className="event-section">
+              <div className="event-section-header">
+                <h3 className="event-section-title">Food Allergies or Dietary Restrictions</h3>
+              </div>
+              <div className="allergies-section">
+                {form.members
+                  .filter(member =>
+                    member.form.receptionRsvp === 'Yes' || member.form.rehearsalRsvp === 'Yes'
+                  )
+                  .map((member) => (
+                    <div key={member.rowIndex} className="form-group meal-group">
+                      <label htmlFor={`allergies_${member.rowIndex}`}>{member.name}</label>
                       <input
                         type="text"
-                        id={`guestName_${member.rowIndex}`}
-                        value={form.shared.guestName || ''}
-                        onChange={(e) => setSharedField('guestName', e.target.value)}
-                        placeholder="Enter your guest's full name"
-                        autoComplete="name"
+                        id={`allergies_${member.rowIndex}`}
+                        value={member.form.foodAllergies}
+                        onChange={(e) => setMemberField(member.rowIndex, 'foodAllergies', e.target.value)}
+                        placeholder="Leave blank if none"
                       />
                     </div>
                   ))}
@@ -737,96 +789,63 @@ function RSVP() {
               </div>
             )}
 
-            {form.members.some(m => m.form.receptionRsvp === 'Yes') && (
-              <div className="event-section">
-                <div className="event-section-header">
-                  <h3 className="event-section-title">Meal Selection</h3>
-                </div>
-                <div className="meal-selections">
-                  {form.members
-                    .filter(member => member.form.receptionRsvp === 'Yes')
-                    .map((member) => (
-                      <div key={member.rowIndex} className="form-group meal-group">
-                        <label htmlFor={`meal_${member.rowIndex}`}>Meal for {member.name}</label>
-                        <select
-                          id={`meal_${member.rowIndex}`}
-                          value={member.form.meal}
-                          onChange={(e) => setMemberField(member.rowIndex, 'meal', e.target.value)}
-                        >
-                          {MEAL_OPTIONS.map(opt => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                          ))}
-                        </select>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
-
-            <div className="event-section">
-              <div className="event-section-header">
-                <h3 className="event-section-title">Food Allergies or Dietary Restrictions</h3>
-              </div>
-              <div className="allergies-section">
-                {form.members.map((member) => (
-                  <div key={member.rowIndex} className="form-group meal-group">
-                    <label htmlFor={`allergies_${member.rowIndex}`}>{member.name}</label>
-                    <input
-                      type="text"
-                      id={`allergies_${member.rowIndex}`}
-                      value={member.form.foodAllergies}
-                      onChange={(e) => setMemberField(member.rowIndex, 'foodAllergies', e.target.value)}
-                      placeholder="Leave blank if none"
-                    />
-                  </div>
-                ))}
-              </div>
+          <div className="event-section">
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label htmlFor="message">Message to Noel <span className="amp-symbol">&amp;</span> Peter</label>
+              <textarea
+                id="message"
+                value={form.shared.message}
+                onChange={(e) => setSharedField('message', e.target.value)}
+                rows="4"
+                placeholder="Share a note, a wish, or anything you'd like us to know…"
+              />
             </div>
+          </div>
 
-            <div className="event-section">
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label htmlFor="message">Message to Noel <span className="amp-symbol">&amp;</span> Peter</label>
-                <textarea
-                  id="message"
-                  value={form.shared.message}
-                  onChange={(e) => setSharedField('message', e.target.value)}
-                  rows="4"
-                  placeholder="Share a note, a wish, or anything you'd like us to know…"
+          <div className="event-section">
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label htmlFor="songRequests">Song Requests</label>
+              <textarea
+                id="songRequests"
+                value={form.shared.songRequests}
+                onChange={(e) => setSharedField('songRequests', e.target.value)}
+                rows="3"
+                placeholder="What song will get you on the dance floor?"
+              />
+            </div>
+          </div>
+
+          <div className="event-section">
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="checkbox-label" htmlFor="sendCopy">
+                <input
+                  id="sendCopy"
+                  type="checkbox"
+                  checked={!!form.shared.sendCopy}
+                  onChange={(e) => setSharedField('sendCopy', e.target.checked)}
                 />
-              </div>
+                <span className="checkbox-label-text">Email me a copy of my responses</span>
+              </label>
+              {form.shared.sendCopy && (
+                <input
+                  type="email"
+                  id="responseEmail"
+                  value={form.shared.responseEmail}
+                  onChange={(e) => setSharedField('responseEmail', e.target.value)}
+                  placeholder="name@example.com"
+                  autoComplete="email"
+                />
+              )}
             </div>
+          </div>
 
-            <div className="event-section">
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="checkbox-label" htmlFor="sendCopy">
-                  <input
-                    id="sendCopy"
-                    type="checkbox"
-                    checked={!!form.shared.sendCopy}
-                    onChange={(e) => setSharedField('sendCopy', e.target.checked)}
-                  />
-                  <span className="checkbox-label-text">Email me a copy of my responses</span>
-                </label>
-                {form.shared.sendCopy && (
-                  <input
-                    type="email"
-                    id="responseEmail"
-                    value={form.shared.responseEmail}
-                    onChange={(e) => setSharedField('responseEmail', e.target.value)}
-                    placeholder="name@example.com"
-                    autoComplete="email"
-                  />
-                )}
-              </div>
-            </div>
+          {formError && <p className="lookup-error">{formError}</p>}
 
-            {formError && <p className="lookup-error">{formError}</p>}
-
-            <button type="submit" className="submit-button" disabled={submitting}>
-              {submitting ? 'Submitting…' : 'Submit RSVP'}
-            </button>
-          </form>
-        )}
+          <button type="submit" className="submit-button" disabled={submitting}>
+            {submitting ? 'Submitting…' : 'Submit RSVP'}
+          </button>
+        </form>
+      )}
       </div>
     </div>
   );

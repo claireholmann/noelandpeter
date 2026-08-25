@@ -1,13 +1,24 @@
-/* Light green color scheme */
 :root {
-  --primary-green: #a8d5ba;
-  --light-green: #d4e8df;
-  --pale-green: #e8f3ed;
-  --dark-green: #5a8f6f;
-  --text-dark: #2d3d38;
-  --text-light: #6b7d76;
+  --sage-50: #f5f9f1;
+  --sage-100: #edf4e8;
+  --sage-200: #dfeccf;
+  --sage-300: #d1e2c1;
+  --sage-400: #bdd0a7;
+  --sage-500: #9db987;
+  --sage-600: #6c8d67;
+  --sage-700: #40553f;
+  --sage-800: #2d3d2f;
+  --gold-200: #e9dcc2;
+  --gold-400: #c39d5a;
+  --paper: rgba(249, 246, 240, 0.82);
+  --paper-strong: #f9f5ee;
+  --ink: #2f352e;
+  --muted: #58635a;
   --white: #ffffff;
-  --spacing: 1rem;
+  --shadow-soft: 0 12px 32px rgba(45, 61, 47, 0.08);
+  --radius-lg: 18px;
+  --radius-md: 14px;
+  --radius-sm: 12px;
 }
 
 * {
@@ -16,11 +27,24 @@
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
-    'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-  background-color: var(--pale-green);
-  color: var(--text-dark);
+  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  background-color: var(--sage-100);
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.22) 0,
+      rgba(255, 255, 255, 0.22) 6px,
+      transparent 6px,
+      transparent 18px
+    ),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(189, 208, 167, 0.16));
+  background-attachment: fixed;
+  color: var(--ink);
   line-height: 1.6;
 }
 
@@ -30,52 +54,133 @@ body {
   flex-direction: column;
 }
 
+.app-header {
+  width: 100%;
+  padding: 1rem 1.25rem 0;
+  background: rgba(249, 246, 240, 0.72);
+  border-bottom: 1px solid rgba(195, 157, 90, 0.5);
+}
+
+.app-nav {
+  display: flex;
+  justify-content: center;
+  gap: clamp(1.25rem, 5vw, 4rem);
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.app-nav-link {
+  position: relative;
+  padding: 0.35rem 0.15rem 0.8rem;
+  color: var(--sage-700);
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.app-nav-link::after {
+  content: '';
+  position: absolute;
+  right: 0.15rem;
+  bottom: 0;
+  left: 0.15rem;
+  height: 2px;
+  background: var(--gold-400);
+  transform: scaleX(0);
+  transition: transform 0.2s ease;
+}
+
+.app-nav-link:hover,
+.app-nav-link.active {
+  color: var(--sage-800);
+}
+
+.app-nav-link.active::after,
+.app-nav-link:hover::after {
+  transform: scaleX(1);
+}
+
 a {
-  color: var(--dark-green);
+  color: var(--sage-700);
   text-decoration: none;
-  transition: color 0.2s ease;
+  transition: color 0.2s ease, transform 0.2s ease;
 }
 
 a:hover {
-  color: var(--primary-green);
+  color: var(--sage-800);
 }
 
 button {
   border: none;
-  background: var(--primary-green);
-  color: var(--text-dark);
-  padding: 0.75rem 1.5rem;
-  border-radius: 4px;
+  background: linear-gradient(135deg, var(--sage-500), var(--sage-600));
+  color: var(--white);
+  padding: 0.85rem 1.5rem;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 0.2s ease;
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
 }
 
 button:hover {
-  background-color: var(--dark-green);
-  color: var(--white);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 18px rgba(76, 98, 71, 0.14);
 }
 
 button:disabled {
-  opacity: 0.6;
+  opacity: 0.65;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 input,
 select,
 textarea {
-  padding: 0.75rem;
-  border: 2px solid var(--light-green);
-  border-radius: 4px;
+  width: 100%;
+  padding: 0.8rem 0.95rem;
+  border: 1.5px solid rgba(89, 117, 90, 0.18);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.8);
   font-family: inherit;
   font-size: 1rem;
-  transition: border-color 0.2s ease;
+  color: var(--ink);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 input:focus,
 select:focus,
 textarea:focus {
   outline: none;
-  border-color: var(--primary-green);
-  box-shadow: 0 0 0 3px rgba(168, 213, 186, 0.1);
+  border-color: var(--sage-500);
+  box-shadow: 0 0 0 4px rgba(157, 185, 135, 0.14);
+  background: var(--white);
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+p,
+label,
+span,
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+@media (max-width: 480px) {
+  .app-header {
+    padding-right: 0.75rem;
+    padding-left: 0.75rem;
+  }
+
+  .app-nav {
+    gap: 1.5rem;
+  }
 }
