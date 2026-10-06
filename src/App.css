@@ -14,7 +14,7 @@
   --gold-400: #c39d5a;
   --paper: rgba(249, 246, 240, 0.82);
   --paper-strong: #f9f5ee;
-  --ink: #2f352e;
+  --ink: var(--sage-700);
   --muted: #58635a;
   --white: #ffffff;
   --font-primary: 'Nicole Fally', 'Cormorant Garamond', Georgia, serif;
@@ -37,7 +37,7 @@ html {
 
 body {
   font-family: var(--font-primary);
-  background-color: var(--sage-200);
+  background-color: var(--sage-100);
   background-attachment: fixed;
   color: var(--ink);
   line-height: 1.6;
@@ -64,8 +64,8 @@ h6 {
 .app-header {
   width: 100%;
   padding: 1rem 1.25rem 0;
-  background: rgba(249, 246, 240, 0.72);
-  border-bottom: 1px solid rgba(195, 157, 90, 0.5);
+  background: var(--sage-600);
+  border-bottom: 1px solid var(--sage-700);
 }
 
 .app-nav {
@@ -79,9 +79,9 @@ h6 {
 .app-nav-link {
   position: relative;
   padding: 0.35rem 0.15rem 0.8rem;
-  color: var(--sage-700);
+  color: var(--gold-200);
   font-family: var(--font-primary);
-  font-size: 0.78rem;
+  font-size: 0.9rem;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -101,7 +101,7 @@ h6 {
 
 .app-nav-link:hover,
 .app-nav-link.active {
-  color: var(--sage-800);
+  color: var(--white);
 }
 
 .app-nav-link.active::after,
@@ -121,21 +121,21 @@ a:hover {
 
 button {
   border: none;
-  background: linear-gradient(135deg, var(--sage-500), var(--sage-600));
+  background: var(--sage-600);
   color: var(--white);
   padding: 0.85rem 1.5rem;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   font-family: var(--font-primary);
   font-size: 1rem;
   font-weight: 600;
   letter-spacing: 0.04em;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, background 0.2s ease;
 }
 
 button:hover {
+  background: var(--sage-100);
   transform: translateY(-1px);
-  box-shadow: 0 10px 18px rgba(76, 98, 71, 0.14);
 }
 
 button:disabled {
