@@ -12,6 +12,7 @@ function Registry() {
   return (
     <div className="registry-container">
       <div className="page-hero">
+        <span className="page-eyebrow">Noel <span className="amp-symbol">&amp;</span> Peter · April 2, 2027</span>
         <h1 className="page-hero-title">Our Registry</h1>
         <div className="page-hero-divider" />
         <div className="registry-content">
