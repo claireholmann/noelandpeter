@@ -9,7 +9,9 @@ function Home() {
           <div className="title-block">
             <p className="invitation-kicker">You are cordially invited to the wedding of</p>
             <h1 className="home-title">
-              Noel <span className="amp-symbol">&amp;</span> Peter
+              <span className="home-name">Noel</span>{' '}
+              <span className="amp-symbol">&amp;</span>{' '}
+              <span className="home-name">Peter</span>
             </h1>
             <p className="home-subtitle">April 2, 2027 • Chicago, Illinois</p>
           </div>

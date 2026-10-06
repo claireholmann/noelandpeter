@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Nicole+Fally:wght@400;500;600;700&family=Pinyon+Script&display=swap');
+
 :root {
   --sage-50: #f5f9f1;
   --sage-100: #edf4e8;
@@ -15,6 +17,8 @@
   --ink: #2f352e;
   --muted: #58635a;
   --white: #ffffff;
+  --font-primary: 'Nicole Fally', 'Cormorant Garamond', Georgia, serif;
+  --font-script: 'Pinyon Script', 'Segoe Script', cursive;
   --shadow-soft: 0 12px 32px rgba(45, 61, 47, 0.08);
   --radius-lg: 18px;
   --radius-md: 14px;
@@ -32,20 +36,23 @@ html {
 }
 
 body {
-  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-  background-color: var(--sage-100);
-  background-image:
-    repeating-linear-gradient(
-      90deg,
-      rgba(255, 255, 255, 0.22) 0,
-      rgba(255, 255, 255, 0.22) 6px,
-      transparent 6px,
-      transparent 18px
-    ),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(189, 208, 167, 0.16));
+  font-family: var(--font-primary);
+  background-color: var(--sage-200);
   background-attachment: fixed;
   color: var(--ink);
   line-height: 1.6;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-primary);
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 #root {
@@ -73,10 +80,10 @@ body {
   position: relative;
   padding: 0.35rem 0.15rem 0.8rem;
   color: var(--sage-700);
-  font-family: 'Montserrat', sans-serif;
-  font-size: 0.68rem;
+  font-family: var(--font-primary);
+  font-size: 0.78rem;
   font-weight: 600;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
@@ -119,8 +126,9 @@ button {
   padding: 0.85rem 1.5rem;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 0.95rem;
-  font-weight: 500;
+  font-family: var(--font-primary);
+  font-size: 1rem;
+  font-weight: 600;
   letter-spacing: 0.04em;
   transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
 }
@@ -171,7 +179,7 @@ button,
 input,
 select,
 textarea {
-  font-family: inherit;
+  font-family: var(--font-primary);
 }
 
 @media (max-width: 480px) {

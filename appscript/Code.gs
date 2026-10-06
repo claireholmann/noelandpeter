@@ -21,9 +21,9 @@
 //  E  Rehearsal RSVP
 //  F  Ceremony RSVP
 //  G  Reception RSVP
-//  H  Meal Choice
-//  I  Food Allergies
-//  J  Song Requests
+//  H  Day After RSVP
+//  I  Meal Choice
+//  J  Food Allergies
 //  K  Message to Couple
 //  L  Submitted At
 
@@ -36,12 +36,12 @@ const C = {
   GUEST:                 1,
   ALIASES:               2,
   INVITED_TO_REHEARSAL:  3,
-  REHEARSAL_RSVP:       4,
-  CEREMONY_RSVP:        5,
+  REHEARSAL_RSVP:        4,
+  CEREMONY_RSVP:         5,
   RECEPTION_RSVP:        6,
-  MEAL:                  7,
-  FOOD_ALLERGIES:        8,
-  SONG_REQUESTS:         9,
+  DAY_AFTER_RSVP:        7,
+  MEAL:                  8,
+  FOOD_ALLERGIES:        9,
   MESSAGE:              10,
   SUBMITTED_AT:         11,
 };
@@ -206,19 +206,14 @@ function lookup(query) {
   const rehearsalRsvpColumnIndex = getHeaderColumnIndex(sheet, 'Rehearsal RSVP');
 
   // Build fast lookup maps once per request.
+  // Keep exact name lookups separate per row so two different households with the
+  // same primary name remain visible as separate search results.
   const rowIndexByName = new Map();
-  const groupingMap = new Map();
 
   for (let i = 1; i < rows.length; i++) {
     const nameKey = normalizeNameKey(rows[i][C.NAME]);
     if (!nameKey || rowIndexByName.has(nameKey)) continue;
     rowIndexByName.set(nameKey, i);
-
-    const groupKey = getLookupGroupingKey(rows[i][C.NAME]);
-    if (!groupingMap.has(groupKey)) {
-      groupingMap.set(groupKey, []);
-    }
-    groupingMap.get(groupKey).push(i);
   }
 
   // Find matching people by name/aliases
@@ -275,24 +270,12 @@ function lookup(query) {
   }
 
   const groupedResults = [];
-  const seenGroupKeys = new Set();
 
   for (const match of topMatches) {
     const matchRowIndex = match.rowIndex;
-    const groupKey = getLookupGroupingKey(rows[matchRowIndex][C.NAME]);
-    if (seenGroupKeys.has(groupKey)) continue;
-    seenGroupKeys.add(groupKey);
+    const matchedRow = rows[matchRowIndex];
+    if (!matchedRow || !matchedRow[C.NAME]) continue;
 
-    const groupedRowIndices = groupingMap.get(groupKey) || [];
-
-    const orderedRowIndices = groupedRowIndices.slice().sort((a, b) => {
-      const aGuest = isGuestName(String(rows[a][C.NAME] || '')) ? 1 : 0;
-      const bGuest = isGuestName(String(rows[b][C.NAME] || '')) ? 1 : 0;
-      return aGuest - bGuest || a - b;
-    });
-
-    const primaryRowIndex = orderedRowIndices.find((idx) => !isGuestName(String(rows[idx][C.NAME] || ''))) || orderedRowIndices[0];
-    const matchedRow = rows[primaryRowIndex];
     const matchedName = String(matchedRow[C.NAME]);
     const guestName = String(matchedRow[C.GUEST] || '').trim();
     const guestMembers = String(matchedRow[C.GUEST] || '')
@@ -305,37 +288,30 @@ function lookup(query) {
     const familyMembers = [];
     const seenRowIndices = new Set();
 
-    for (const rowIndex of orderedRowIndices) {
-      const row = rows[rowIndex];
-      if (!row || !row[C.NAME]) continue;
+    familyMembers.push({
+      rowIndex: matchRowIndex,
+      name: matchedName,
+      invitedToRehearsal: rehearsalInviteColumnIndex >= 0
+        && String(matchedRow[rehearsalInviteColumnIndex] || '').trim().toUpperCase() === 'YES',
+      alreadySubmitted: !!matchedRow[C.SUBMITTED_AT],
+      existing: {
+        ceremonyRsvp: String(matchedRow[C.CEREMONY_RSVP] || ''),
+        receptionRsvp: String(matchedRow[C.RECEPTION_RSVP] || ''),
+        rehearsalRsvp: rehearsalRsvpColumnIndex >= 0 ? String(matchedRow[rehearsalRsvpColumnIndex] || '') : '',
+        dayAfterRsvp: String(matchedRow[C.DAY_AFTER_RSVP] || ''),
+        meal: String(matchedRow[C.MEAL] || ''),
+        foodAllergies: String(matchedRow[C.FOOD_ALLERGIES] || ''),
+      },
+    });
+    seenRowIndices.add(matchRowIndex);
 
-      familyMembers.push({
-        rowIndex,
-        name: String(row[C.NAME]),
-        invitedToRehearsal: rehearsalInviteColumnIndex >= 0
-          && String(row[rehearsalInviteColumnIndex] || '').trim().toUpperCase() === 'YES',
-        alreadySubmitted: !!row[C.SUBMITTED_AT],
-        existing: {
-          ceremonyRsvp: String(row[C.CEREMONY_RSVP] || ''),
-          receptionRsvp: String(row[C.RECEPTION_RSVP] || ''),
-          rehearsalRsvp: rehearsalRsvpColumnIndex >= 0 ? String(row[rehearsalRsvpColumnIndex] || '') : '',
-          meal: String(row[C.MEAL] || ''),
-          foodAllergies: String(row[C.FOOD_ALLERGIES] || ''),
-        },
-      });
-      seenRowIndices.add(rowIndex);
-    }
-
-    // Add household members from primary grouping source (Guest or Aliases fallback)
+    // Add household members from the guest list, but do not collapse different
+    // households that happen to share the same primary name.
     for (const householdName of householdMembers) {
       const householdRowIndex = rowIndexByName.get(normalizeNameKey(householdName));
       if (householdRowIndex == null || seenRowIndices.has(householdRowIndex)) {
-        // If there is a household member name listed (e.g., a guest) but no
-        // matching sheet row, include a placeholder member entry so the
-        // client can display the guest name alongside household members.
         if (householdName && String(householdName).trim()) {
           const guestNameOnly = String(householdName).trim();
-          // Avoid duplicating guest placeholders by name
           const alreadyHasPlaceholder = familyMembers.some(
             m => m.isGuestPlaceholder && m.name === guestNameOnly
           );
@@ -349,6 +325,7 @@ function lookup(query) {
                 ceremonyRsvp: '',
                 receptionRsvp: '',
                 rehearsalRsvp: '',
+                dayAfterRsvp: '',
                 meal: '',
                 foodAllergies: '',
               },
@@ -372,6 +349,7 @@ function lookup(query) {
           ceremonyRsvp: String(row[C.CEREMONY_RSVP] || ''),
           receptionRsvp: String(row[C.RECEPTION_RSVP] || ''),
           rehearsalRsvp: rehearsalRsvpColumnIndex >= 0 ? String(row[rehearsalRsvpColumnIndex] || '') : '',
+          dayAfterRsvp: String(row[C.DAY_AFTER_RSVP] || ''),
           meal: String(row[C.MEAL] || ''),
           foodAllergies: String(row[C.FOOD_ALLERGIES] || ''),
         },
@@ -379,14 +357,11 @@ function lookup(query) {
       seenRowIndices.add(householdRowIndex);
     }
 
-    let sharedSongRequests = '';
     let sharedMessage = '';
     for (const member of familyMembers) {
       const sourceRow = rows[member.rowIndex] || [];
-      const songValue = String(sourceRow[C.SONG_REQUESTS] || '').trim();
       const msgValue = String(sourceRow[C.MESSAGE] || '').trim();
-      if (songValue || msgValue) {
-        sharedSongRequests = songValue;
+      if (msgValue) {
         sharedMessage = msgValue;
         break;
       }
@@ -397,7 +372,6 @@ function lookup(query) {
       matchedName,
       guestName,
       shared: {
-        songRequests: sharedSongRequests,
         message: sharedMessage,
       },
     });
@@ -426,8 +400,6 @@ function getHeaderColumnIndex(sheet, headerName) {
 function submitRsvp(p) {
   const sheet    = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
   const timestamp = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
-  const guestNameColumnIndex = getHeaderColumnIndex(sheet, 'Guest Name');
-  const guestRsvpColumnIndex = getHeaderColumnIndex(sheet, 'Guest RSVP');
   const rehearsalRsvpColumnIndex = getHeaderColumnIndex(sheet, 'Rehearsal RSVP');
 
   const headerCheck = validateSheetHeaders(sheet);
@@ -456,12 +428,10 @@ function submitRsvp(p) {
       ceremonyRsvp,
       receptionRsvp:      p[`${mKey}_receptionRsvp`]  || '',
       rehearsalRsvp:      p[`${mKey}_rehearsalRsvp`]  || '',
+      dayAfterRsvp:       p[`${mKey}_dayAfterRsvp`]   || '',
       meal:               p[`${mKey}_meal`]           || '',
       foodAllergies:      p[`${mKey}_foodAllergies`]  || '',
       guestName:          guestName,
-      guestRsvp:          p.guestRsvp || '',
-      guestNameColumnIndex,
-      guestRsvpColumnIndex,
       rehearsalRsvpColumnIndex,
       timestamp,
       isGuest:            isGuestName(member.name),
@@ -496,11 +466,10 @@ function submitRsvp(p) {
     sheet.getRange(partnerRowIndex + 1, C.GUEST + 1).setValue(partnerHouseholdUpdated);
   }
 
-  // Write shared fields (song requests, message) to every selected member row
+  // Write shared fields to every selected member row
   for (const member of members) {
     if (member.rowIndex === -1) continue; // skip placeholder members
     const sheetRow = member.rowIndex + 1;
-    sheet.getRange(sheetRow, C.SONG_REQUESTS + 1).setValue(p.songRequests || '');
     sheet.getRange(sheetRow, C.MESSAGE + 1).setValue(p.message || '');
   }
 
@@ -525,6 +494,7 @@ function writePersonRow(sheet, rowIndex, data) {
   const updates = [
     [C.CEREMONY_RSVP  + 1, pick(data.ceremonyRsvp, C.CEREMONY_RSVP)   ],
     [C.RECEPTION_RSVP + 1, pick(data.receptionRsvp, C.RECEPTION_RSVP) ],
+    [C.DAY_AFTER_RSVP + 1, pick(data.dayAfterRsvp, C.DAY_AFTER_RSVP) ],
     [C.MEAL           + 1, pick(data.meal, C.MEAL)                     ],
     [C.FOOD_ALLERGIES + 1, pick(data.foodAllergies, C.FOOD_ALLERGIES)  ],
   ];
@@ -541,12 +511,6 @@ function writePersonRow(sheet, rowIndex, data) {
     updates.unshift([C.NAME + 1, data.guestName]);
   }
 
-  if (data.guestNameColumnIndex >= 0) {
-    updates.push([data.guestNameColumnIndex + 1, pick(data.guestName, data.guestNameColumnIndex)]);
-  }
-  if (data.guestRsvpColumnIndex >= 0) {
-    updates.push([data.guestRsvpColumnIndex + 1, pick(data.guestRsvp, data.guestRsvpColumnIndex)]);
-  }
   updates.push([C.SUBMITTED_AT + 1, data.timestamp]);
   for (const [col, val] of updates) {
     sheet.getRange(sheetRow, col).setValue(val);
@@ -562,14 +526,12 @@ function validateSheetHeaders(sheet) {
     'Rehearsal RSVP',
     'Ceremony RSVP',
     'Reception RSVP',
+    'Day After RSVP',
     'Meal Choice',
     'Food Allergies',
-    'Song Requests',
     'Message to Couple',
     'Submitted At',
   ];
-  const optionalHeaders = ['Guest Name', 'Guest RSVP'];
-
   const headerRow = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   const normalize = (v) => String(v || '').trim().toLowerCase();
 
@@ -582,12 +544,6 @@ function validateSheetHeaders(sheet) {
     }
   }
 
-  for (let i = 0; i < optionalHeaders.length; i++) {
-    const header = optionalHeaders[i];
-    const exists = headerRow.some((value) => normalize(value) === normalize(header));
-    if (!exists) continue;
-  }
-
   return { ok: true };
 }
 
@@ -595,14 +551,23 @@ function validateSheetHeaders(sheet) {
 
 function formatHouseholdNamesWithGuest(members, guestName) {
   if (!members || members.length === 0) return '';
-  
+
   const partner = members.find(m => !isGuestName(m.name));
   const guest = members.find(m => isGuestName(m.name));
-  
+
   if (partner && guest && guestName) {
+    const formattedGuestHousehold = formatHouseholdNames([
+      { name: partner.name },
+      { name: guestName },
+    ]);
+
+    if (formattedGuestHousehold) {
+      return formattedGuestHousehold;
+    }
+
     return `${partner.name} and ${guestName}`;
   }
-  
+
   return formatHouseholdNames(members);
 }
 
@@ -612,35 +577,35 @@ function formatHouseholdNames(members) {
 
   const suffixes = new Set(['jr', 'jr.', 'sr', 'sr.', 'ii', 'iii', 'iv', 'v']);
 
-  const getFamilyLastName = (fullName) => {
+  const getNameParts = (fullName) => {
     const parts = String(fullName || '').trim().split(/\s+/).filter(Boolean);
-    if (parts.length < 2) return '';
-    const tail = parts[parts.length - 1].toLowerCase();
+    if (parts.length === 0) return { firstNames: '', lastName: '', raw: '' };
+
+    const tail = String(parts[parts.length - 1] || '').toLowerCase();
     const lastIdx = suffixes.has(tail) ? parts.length - 2 : parts.length - 1;
-    return (parts[lastIdx] || '').toLowerCase();
+    const lastName = parts[lastIdx] || '';
+    const firstNames = parts.slice(0, Math.max(0, lastIdx)).join(' ');
+    return {
+      raw: parts.join(' '),
+      firstNames,
+      lastName,
+    };
   };
 
-  const parsed = members.map(m => {
-    const parts = m.name.trim().split(/\s+/);
-    return {
-      name: m.name,
-      first: parts[0],
-      familyLast: getFamilyLastName(m.name),
-    };
-  });
+  const parsed = members
+    .map((m) => ({ raw: String(m.name || '').trim(), ...getNameParts(m.name) }))
+    .filter((p) => p.raw);
 
-  const familyLastNames = parsed.map(p => p.familyLast).filter(Boolean);
-  const allSameLastName = familyLastNames.length === parsed.length
-    && familyLastNames.every(ln => ln === familyLastNames[0]);
-
-  if (allSameLastName && familyLastNames[0]) {
-    const displayLast = familyLastNames[0].charAt(0).toUpperCase() + familyLastNames[0].slice(1);
-    if (parsed.length >= 3) return `The ${displayLast} Family`;
-    const firstNames = parsed.map(p => p.first).join(' and ');
-    return `${firstNames} ${displayLast}`;
+  if (parsed.length === 2) {
+    const firstLast = parsed[0].lastName && parsed[1].lastName;
+    const sameLastName = firstLast && parsed[0].lastName.toLowerCase() === parsed[1].lastName.toLowerCase();
+    if (sameLastName) {
+      const firstDisplay = parsed[0].firstNames || parsed[0].raw.split(/\s+/)[0] || parsed[0].raw;
+      return `${firstDisplay} and ${parsed[1].raw}`;
+    }
   }
 
-  return members.map(m => m.name).join(' and ');
+  return parsed.map((person) => person.raw).join(' and ');
 }
 
 // ─── Email Notification ──────────────────────────────────────
@@ -703,14 +668,16 @@ function buildRsvpPlainText(householdNames, timestamp, p, members) {
   for (const member of members) {
     const mKey = `member_${member.rowIndex}`;
     eventDetails += `${member.name}:\n`;
+    eventDetails += `  Rehearsal: ${p[`${mKey}_rehearsalRsvp`] || '—'}\n`;
+    eventDetails += `  Ceremony: ${p[`${mKey}_ceremonyRsvp`] || '—'}\n`;
     eventDetails += `  Reception: ${p[`${mKey}_receptionRsvp`] || '—'}\n`;
+    eventDetails += `  Day After: ${p[`${mKey}_dayAfterRsvp`] || '—'}\n`;
     if (p[`${mKey}_meal`]) eventDetails += `  Meal: ${p[`${mKey}_meal`]}\n`;
     if (p[`${mKey}_foodAllergies`]) eventDetails += `  Allergies: ${p[`${mKey}_foodAllergies`]}\n`;
     eventDetails += '\n';
   }
   const guestLine = p.guestName ? `Guest: ${p.guestName}\n` : '';
-  const guestRsvpLine = p.guestRsvp ? `Guest RSVP: ${p.guestRsvp}\n` : '';
-  return `RSVP from ${householdNames}\nSubmitted: ${timestamp}\n${guestLine}${guestRsvpLine}\n${eventDetails}\nSong Requests: ${p.songRequests || 'None'}\nMessage: ${p.message || 'None'}`;
+  return `RSVP from ${householdNames}\nSubmitted: ${timestamp}\n${guestLine}\n\n${eventDetails}\nMessage: ${p.message || 'None'}`;
 }
 
 // ── HTML email builder ────────────────────────────────────────
@@ -723,7 +690,7 @@ function buildRsvpHtmlEmail({ headerLabel, subLabel, householdNames, timestamp, 
     const bg = yes ? '#40553f' : '#f9f5ee';
     const border = yes ? '#c39d5a' : '#e9dcc2';
     const mark = yes ? ' ✓' : '';
-    return `<span style="display:inline-block;padding:4px 10px;border:1px solid ${border};border-radius:2px;font-family:Montserrat,Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;background:${bg};color:${color};">${val}${mark}</span>`;
+    return `<span style="display:inline-block;padding:4px 10px;border:1px solid ${border};border-radius:2px;font-family:'Cormorant Garamond',Georgia,serif;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;background:${bg};color:${color};">${val}${mark}</span>`;
   };
 
   const esc = (s) => String(s || '')
@@ -744,6 +711,7 @@ function buildRsvpHtmlEmail({ headerLabel, subLabel, householdNames, timestamp, 
       ['Rehearsal Dinner', p[`${mKey}_rehearsalRsvp`]],
       ['Ceremony', p[`${mKey}_ceremonyRsvp`]],
       ['Reception', p[`${mKey}_receptionRsvp`]],
+      ['The Day After', p[`${mKey}_dayAfterRsvp`]],
     ]
       .filter(([, value]) => value)
       .map(([label, value]) => `<tr><td style="padding:6px 0;color:#58635a;font-size:13px;">${label}</td><td style="padding:6px 0;text-align:right;">${rsvpBadge(value)}</td></tr>`)
@@ -752,7 +720,7 @@ function buildRsvpHtmlEmail({ headerLabel, subLabel, householdNames, timestamp, 
     memberRows += `
       <div style="margin-bottom:22px;">
         <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:20px;font-weight:600;color:#2d3d2f;border-bottom:1px solid #e9dcc2;padding-bottom:6px;margin-bottom:8px;">${esc(member.name)}</div>
-        <table width="100%" cellpadding="0" cellspacing="0" style="font-family:Montserrat,Arial,sans-serif;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="font-family:'Cormorant Garamond',Georgia,serif;">
           ${eventRows}
           ${mealRow}${allergyRow}
         </table>
@@ -762,24 +730,18 @@ function buildRsvpHtmlEmail({ headerLabel, subLabel, householdNames, timestamp, 
   const guestRow = p.guestName
     ? `<tr><td style="padding:6px 0;color:#58635a;font-size:13px;">Guest</td><td style="padding:6px 0;text-align:right;color:#2d3d2f;font-size:13px;">${esc(p.guestName)}</td></tr>`
     : '';
-  const guestRsvpRow = p.guestRsvp
-    ? `<tr><td style="padding:6px 0;color:#58635a;font-size:13px;">Guest RSVP</td><td style="padding:6px 0;text-align:right;color:#2d3d2f;font-size:13px;">${esc(p.guestRsvp)}</td></tr>`
-    : '';
-  const notesSection = (p.songRequests || p.message || guestRow || guestRsvpRow) ? `
+  const notesSection = (p.message || guestRow) ? `
       <div style="margin-bottom:20px;">
         <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:20px;font-weight:600;color:#2d3d2f;border-bottom:1px solid #e9dcc2;padding-bottom:6px;margin-bottom:8px;">Notes</div>
-        <table width="100%" cellpadding="0" cellspacing="0" style="font-family:Montserrat,Arial,sans-serif;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="font-family:'Cormorant Garamond',Georgia,serif;">
           ${guestRow}
-          ${guestRsvpRow}
-          ${p.songRequests ? `<tr><td style="padding:6px 0;color:#58635a;font-size:13px;">Song Request</td><td style="padding:6px 0;text-align:right;color:#2d3d2f;font-size:13px;">${esc(p.songRequests)}</td></tr>` : ''}
           ${p.message ? `<tr><td style="padding:6px 0;color:#58635a;font-size:13px;">Message</td><td style="padding:6px 0;text-align:right;color:#2d3d2f;font-size:13px;">${esc(p.message)}</td></tr>` : ''}
         </table>
       </div>` : '';
 
   const subLabelHtml = subLabel
-    ? `<p style="margin:8px 0 0;font-family:Montserrat,Arial,sans-serif;font-size:13px;color:#f9f5ee;">${esc(subLabel)}</p>`
-    : `<p style="margin:8px 0 0;font-family:Montserrat,Arial,sans-serif;font-size:12px;color:#e9dcc2;">Submitted ${esc(timestamp)}</p>`;
-
+    ? `<p style="margin:8px 0 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:13px;color:#f9f5ee;">${esc(subLabel)}</p>`
+    : `<p style="margin:8px 0 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:12px;color:#e9dcc2;">Submitted ${esc(timestamp)}</p>`;
   const footerNote = isGuestCopy
     ? 'Questions? Reach us at <a href="mailto:thekoschs@gmail.com" style="color:#40553f;">thekoschs@gmail.com</a>'
     : `Submitted: ${esc(timestamp)}`;
@@ -794,14 +756,14 @@ function buildRsvpHtmlEmail({ headerLabel, subLabel, householdNames, timestamp, 
 
         <!-- Header -->
         <tr><td style="background:#40553f;padding:32px 32px 24px;text-align:center;">
-          <p style="margin:0 0 6px;font-family:Montserrat,Arial,sans-serif;font-size:11px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:#e9dcc2;">Noel &amp; Peter · April 2, 2027</p>
+          <p style="margin:0 0 6px;font-family:'Cormorant Garamond',Georgia,serif;font-size:12px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:#e9dcc2;">Noel &amp; Peter · April 2, 2027</p>
           <h1 style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:32px;font-weight:500;color:#f9f5ee;letter-spacing:0.04em;">${esc(headerLabel)}</h1>
           ${subLabelHtml}
         </td></tr>
 
         <!-- Household name band -->
         <tr><td style="background:#e9dcc2;padding:10px 32px;">
-          <p style="margin:0;font-family:Montserrat,Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#2d3d2f;">${esc(householdNames)}</p>
+          <p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:13px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#2d3d2f;">${esc(householdNames)}</p>
         </td></tr>
 
         <!-- Body -->
@@ -812,7 +774,7 @@ function buildRsvpHtmlEmail({ headerLabel, subLabel, householdNames, timestamp, 
 
         <!-- Footer -->
         <tr><td style="padding:20px 32px 28px;border-top:1px solid #e9dcc2;">
-          <p style="margin:0;font-family:Montserrat,Arial,sans-serif;font-size:12px;color:#58635a;text-align:center;">${footerNote}</p>
+          <p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:13px;color:#58635a;text-align:center;">${footerNote}</p>
         </td></tr>
 
       </table>

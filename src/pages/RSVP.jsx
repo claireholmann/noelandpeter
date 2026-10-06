@@ -10,29 +10,34 @@ const NAME_SUFFIX_TERMS = ['jr', 'jr.', 'sr', 'sr.', 'ii', 'iii', 'iv'];
 
 const MEAL_OPTIONS = [
   { value: '', label: 'Select a meal…' },
-  { value: 'Chicken', label: 'Chicken' },
-  { value: 'Beef', label: 'Beef' },
-  { value: 'Fish', label: 'Fish' },
-  { value: 'Vegetarian', label: 'Vegetarian' },
+  { value: 'Coq au Vin Chicken Breast', label: 'Coq au Vin Chicken Breast' },
+  { value: 'New York Strip', label: 'New York Strip' },
+  { value: 'Chilean Sea Bass', label: 'Chilean Sea Bass' },
 ];
 
 const EVENTS = [
   {
     key: 'rehearsalRsvp',
-    title: 'Rehearsal Dinner',
+    title: 'The Night Before',
     date: 'Thursday, April 1, 2027',
     conditional: (member) => member.invitedToRehearsal,
   },
   {
     key: 'ceremonyRsvp',
-    title: 'Ceremony',
+    title: 'Sacrament of Marriage',
     date: 'Friday, April 2, 2027',
     conditional: () => true,
   },
   {
     key: 'receptionRsvp',
-    title: 'Reception',
+    title: 'Cocktail Hour & Reception',
     date: 'Friday, April 2, 2027',
+    conditional: () => true,
+  },
+  {
+    key: 'dayAfterRsvp',
+    title: 'The Day After',
+    date: 'Saturday, April 3, 2027',
     conditional: () => true,
   },
 ];
@@ -172,29 +177,27 @@ function formatHouseholdNames(members) {
   if (displayMembers.length === 1) return displayMembers[0]._disp;
 
   const suffixes = new Set(['jr', 'jr.', 'sr', 'sr.', 'ii', 'iii', 'iv', 'v']);
-  const getFamilyLastName = (fullName) => {
+  const getNameParts = (fullName) => {
     const parts = String(fullName).trim().split(/\s+/).filter(Boolean);
-    if (parts.length < 2) return '';
-    const tail = parts[parts.length - 1].toLowerCase();
+    if (parts.length === 0) return { firstNames: '', lastName: '' };
+    const tail = String(parts[parts.length - 1] || '').toLowerCase();
     const lastIdx = suffixes.has(tail) ? parts.length - 2 : parts.length - 1;
-    return String(parts[lastIdx] || '').toLowerCase();
+    const lastName = parts[lastIdx] || '';
+    const firstNames = parts.slice(0, Math.max(0, lastIdx)).join(' ');
+    return { firstNames, lastName };
   };
 
-  const parsed = displayMembers.map((m) => {
-    const parts = m._disp.trim().split(/\s+/);
-    return { _disp: m._disp, first: parts[0], familyLast: getFamilyLastName(m._disp) };
-  });
+  const parsed = displayMembers.map((m) => ({
+    _disp: m._disp,
+    ...getNameParts(m._disp),
+  }));
 
-  const familyLastNames = parsed.map((p) => p.familyLast).filter(Boolean);
-  const allSameLastName =
-    familyLastNames.length === parsed.length &&
-    familyLastNames.every((ln) => ln === familyLastNames[0]);
-
-  if (allSameLastName && familyLastNames[0]) {
-    const displayLast = familyLastNames[0].charAt(0).toUpperCase() + familyLastNames[0].slice(1);
-    if (parsed.length >= 3) return `The ${displayLast} Family`;
-    const firstNames = parsed.map((p) => p.first).join(' and ');
-    return `${firstNames} ${displayLast}`;
+  if (parsed.length === 2 && parsed[0].lastName && parsed[1].lastName) {
+    const sameLastName = parsed[0].lastName.toLowerCase() === parsed[1].lastName.toLowerCase();
+    if (sameLastName) {
+      const firstDisplay = parsed[0].firstNames || parsed[0]._disp.split(/\s+/)[0] || parsed[0]._disp;
+      return `${firstDisplay} and ${parsed[1]._disp}`;
+    }
   }
 
   return displayMembers.map((m) => m._disp).join(' and ');
@@ -306,11 +309,10 @@ function splitGuestNames(guestName) {
 
 function chooseSharedData(matches) {
   for (const match of matches) {
-    const songRequests = String(match?.shared?.songRequests || '').trim();
     const message = String(match?.shared?.message || '').trim();
-    if (songRequests || message) return { songRequests, message };
+    if (message) return { message };
   }
-  return { songRequests: '', message: '' };
+  return { message: '' };
 }
 
 function mergeUniqueMatches(primary, secondary) {
@@ -326,52 +328,16 @@ function mergeUniqueMatches(primary, secondary) {
 function linkRelatedMatches(matches) {
   if (!Array.isArray(matches) || matches.length === 0) return [];
 
-  const byName = new Map();
-  matches.forEach((match, idx) => {
-    const candidateNames = [match.matchedName, ...(match.members || []).map((m) => m.name)];
-    for (const candidate of candidateNames) {
-      const key = normalizeText(candidate);
-      if (!key) continue;
-      const existing = byName.get(key) || [];
-      existing.push(idx);
-      byName.set(key, existing);
-    }
-  });
-
-  const seen = new Set();
-  const linked = [];
-
-  for (let i = 0; i < matches.length; i += 1) {
-    if (seen.has(i)) continue;
-    const queue = [i];
-    const group = [];
-    while (queue.length > 0) {
-      const currentIdx = queue.shift();
-      if (seen.has(currentIdx)) continue;
-      seen.add(currentIdx);
-      group.push(matches[currentIdx]);
-      const guestNames = splitGuestNames(matches[currentIdx].guestName);
-      for (const guest of guestNames) {
-        const linkedIndices = byName.get(normalizeText(guest)) || [];
-        for (const linkedIdx of linkedIndices) {
-          if (!seen.has(linkedIdx)) queue.push(linkedIdx);
-        }
-      }
-    }
-    const mergedMembers = [];
-    const memberSeen = new Set();
-    for (const match of group) {
-      for (const member of match.members || []) {
-        const memberKey = String(member.rowIndex);
-        if (memberSeen.has(memberKey)) continue;
-        memberSeen.add(memberKey);
-        mergedMembers.push(member);
-      }
-    }
-    linked.push({ ...group[0], members: mergedMembers, shared: chooseSharedData(group) });
-  }
-
-  return linked;
+  // Keep each invitation result separate when the same name appears multiple times.
+  // Grouping by exact name merges distinct records (for example, two Michael Mullens)
+  // into a single card, which hides valid matches from the search list.
+  return matches.map((match) => ({
+    ...match,
+    members: Array.isArray(match.members) ? [...match.members] : [],
+    shared: {
+      message: String(match?.shared?.message || '').trim(),
+    },
+  }));
 }
 
 function RSVP() {
@@ -445,6 +411,7 @@ function RSVP() {
         ceremonyRsvp: m.existing?.ceremonyRsvp || '',
         receptionRsvp: m.existing?.receptionRsvp || '',
         rehearsalRsvp: m.existing?.rehearsalRsvp || '',
+        dayAfterRsvp: m.existing?.dayAfterRsvp || '',
         meal: m.existing?.meal || '',
         foodAllergies: m.existing?.foodAllergies || '',
       },
@@ -457,7 +424,6 @@ function RSVP() {
       members: memberForms,
       shared: {
         message: match.shared?.message || '',
-        songRequests: match.shared?.songRequests || '',
         guestName: '',
         sendCopy: false,
         responseEmail: '',
@@ -492,10 +458,11 @@ function RSVP() {
   const validate = () => {
     for (const member of form.members) {
       const m = member.form;
-      if (!m.ceremonyRsvp) return `Please answer Ceremony for ${member.name}.`;
-      if (!m.receptionRsvp) return `Please answer Reception for ${member.name}.`;
+      if (!m.ceremonyRsvp) return `Please answer Sacrament of Marriage for ${member.name}.`;
+      if (!m.receptionRsvp) return `Please answer Cocktail Hour & Reception for ${member.name}.`;
+      if (!m.dayAfterRsvp) return `Please answer The Day After for ${member.name}.`;
       if (member.invitedToRehearsal && !m.rehearsalRsvp) {
-        return `Please answer Rehearsal Dinner for ${member.name}.`;
+        return `Please answer The Night Before for ${member.name}.`;
       }
       if (m.receptionRsvp === 'Yes' && !m.meal)
         return `Please select a meal for ${member.name}.`;
@@ -527,7 +494,6 @@ function RSVP() {
       params.append('action', 'submit');
       params.append('members', JSON.stringify(form.members.map(m => ({ rowIndex: m.rowIndex, name: m.name }))));
       params.append('message', form.shared.message);
-      params.append('songRequests', form.shared.songRequests);
       params.append('guestName', form.shared.guestName || '');
       params.append('sendCopy', form.shared.sendCopy ? 'Yes' : 'No');
       params.append('responseEmail', form.shared.responseEmail);
@@ -537,6 +503,7 @@ function RSVP() {
         params.append(`${mKey}_ceremonyRsvp`, member.form.ceremonyRsvp);
         params.append(`${mKey}_receptionRsvp`, member.form.receptionRsvp);
         params.append(`${mKey}_rehearsalRsvp`, member.form.rehearsalRsvp);
+        params.append(`${mKey}_dayAfterRsvp`, member.form.dayAfterRsvp);
         params.append(`${mKey}_meal`, member.form.meal);
         params.append(`${mKey}_foodAllergies`, member.form.foodAllergies);
       }
@@ -614,6 +581,7 @@ function RSVP() {
       <div className="page-hero">
         <span className="page-eyebrow">Noel <span className="amp-symbol">&</span> Peter · April 2, 2027</span>
         <h1 className="page-hero-title">RSVP</h1>
+        <p className="invite-detail-note">Please see your invitation for details.</p>
         <div className="page-hero-divider" />
 
         {!household && (
@@ -798,19 +766,6 @@ function RSVP() {
                 onChange={(e) => setSharedField('message', e.target.value)}
                 rows="4"
                 placeholder="Share a note, a wish, or anything you'd like us to know…"
-              />
-            </div>
-          </div>
-
-          <div className="event-section">
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label htmlFor="songRequests">Song Requests</label>
-              <textarea
-                id="songRequests"
-                value={form.shared.songRequests}
-                onChange={(e) => setSharedField('songRequests', e.target.value)}
-                rows="3"
-                placeholder="What song will get you on the dance floor?"
               />
             </div>
           </div>
