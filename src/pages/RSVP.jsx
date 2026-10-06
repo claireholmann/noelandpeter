@@ -42,6 +42,14 @@ const EVENTS = [
   },
 ];
 
+// fetch() has no built-in timeout, so a stalled request (e.g. a slow Apps Script
+// cold start) can hang forever and leave the UI stuck mid-search. Abort it instead.
+function fetchWithTimeout(url, options = {}, timeout = 8000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer));
+}
+
 async function lookupInvitations(query) {
   const normalized = normalizeText(query);
   if (!normalized) return [];
@@ -69,7 +77,7 @@ async function lookupInvitations(query) {
 
   let data;
   try {
-    const res = await fetch(url, { redirect: 'follow' });
+    const res = await fetchWithTimeout(url, { redirect: 'follow' });
     if (!res.ok) {
       throw new Error(`Lookup failed (${res.status}).`);
     }
@@ -510,7 +518,7 @@ function RSVP() {
 
       let data;
       try {
-        const res = await fetch(`${SCRIPT_URL}?${params.toString()}`, { redirect: 'follow' });
+        const res = await fetchWithTimeout(`${SCRIPT_URL}?${params.toString()}`, { redirect: 'follow' });
         const contentType = res.headers.get && res.headers.get('content-type') || '';
         if (res.ok && contentType.toLowerCase().includes('application/json')) {
           data = await res.json();
@@ -598,7 +606,7 @@ function RSVP() {
                     placeholder="Enter first and last name"
                     autoComplete="off"
                   />
-                  <button type="submit" className="search-button" disabled={searching}>
+                  <button type="submit" className="search-button">
                     {searching ? '…' : 'Search'}
                   </button>
                 </div>
