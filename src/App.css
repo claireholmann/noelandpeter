@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Nicole+Fally:wght@400;500;600;700&family=Pinyon+Script&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nicole+Fally:wght@400;500;600;700&family=Rouge+Script&display=swap');
 
 :root {
   --sage-50: #f5f9f1;
@@ -18,7 +18,7 @@
   --muted: #58635a;
   --white: #ffffff;
   --font-primary: 'Nicole Fally', 'Cormorant Garamond', Georgia, serif;
-  --font-script: 'Pinyon Script', 'Segoe Script', cursive;
+  --font-script: 'Rouge Script', 'Segoe Script', cursive;
   --shadow-soft: 0 12px 32px rgba(45, 61, 47, 0.08);
   --radius-lg: 18px;
   --radius-md: 14px;
