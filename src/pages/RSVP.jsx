@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import './RSVP.css';
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzfUWs0YE2E8vLw96wH4gumIydawY2P0sn7F_PkAD2UlL3O9dsfzNy4Bcl2DJtIzgk0/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxgnBrLeQVP037u2LVcSJYOYAIrPob8fT_3yCbwyg0NGVlMsWLX_sDmx0uCa7ien9zc/exec';
 const ITINERARY_RSVP_STORAGE_KEY = 'wedding_rsvp_itinerary';
 const RSVP_LOOKUP_CACHE = new Map();
 const RSVP_SESSION_CACHE_KEY = 'wedding_rsvp_lookup_cache';
