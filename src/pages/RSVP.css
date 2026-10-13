@@ -189,7 +189,7 @@
 
 .result-name {
   font-family: var(--font-primary);
-  font-size: 1.7rem;
+  font-size: 1.4rem;
   color: var(--sage-700);
 }
 
@@ -225,7 +225,7 @@
   margin: 0;
   color: var(--sage-700);
   font-family: var(--font-primary);
-  font-size: 1.8rem;
+  font-size: 1.3rem;
   line-height: 1.5;
 }
 
@@ -354,18 +354,18 @@
 }
 
 .yn-selected {
-  border-color: var(--gold-400);
+  border-color: transparent;
   border-radius: 2px;
-  background: var(--sage-700);
-  color: var(--white);
-  box-shadow: 0 2px 6px rgba(45, 61, 47, 0.16);
+  background: transparent;
+  color: var(--sage-700);
+  box-shadow: none;
   font-weight: 800;
 }
 
 .yn-selected::after {
   content: '\2713';
   margin-left: 0.3rem;
-  color: var(--gold-400);
+  color: var(--sage-700);
   font-size: 0.65rem;
 }
 

@@ -576,6 +576,7 @@ function RSVP() {
             </div>
             <h2>Thank You<span className="success-message-character">!</span></h2>
             <p>Your RSVP is in. We cannot wait to celebrate with you!</p>
+            <p>Please contact Noel and Peter regarding wedding weekend room blocks.</p>
           </div>
         </div>
       </div>

@@ -29,7 +29,7 @@
 
 
 const SHEET_NAME        = 'RSVP';            
-const NOTIFICATION_EMAIL = 'thekoschs@gmail.com'; 
+const NOTIFICATION_EMAIL = 'semprevivo0402@gmail.com'; 
 // Column indices (0-based)
 const C = {
   NAME:                  0,
@@ -644,8 +644,8 @@ function sendGuestCopyEmail(p, members) {
   const householdNames = formatHouseholdNamesWithGuest(members, guestName);
   const timestamp = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
   const htmlBody = buildRsvpHtmlEmail({
-    headerLabel: 'Your RSVP is confirmed',
-    subLabel: 'We can\'t wait to celebrate with you in Chicago',
+    headerLabel: 'Your RSVP is Confirmed',
+    subLabel: 'We can\'t wait to celebrate with you in Chicago!',
     householdNames,
     timestamp,
     p,
@@ -686,11 +686,9 @@ function buildRsvpHtmlEmail({ headerLabel, subLabel, householdNames, timestamp, 
   const rsvpBadge = (val) => {
     if (!val || val === '—') return '<span style="color:#58635a;">—</span>';
     const yes = val === 'Yes';
-    const color = yes ? '#ffffff' : '#58635a';
-    const bg = yes ? '#40553f' : '#f9f5ee';
-    const border = yes ? '#c39d5a' : '#e9dcc2';
+    const color = yes ? '#40553f' : '#58635a';
     const mark = yes ? ' ✓' : '';
-    return `<span style="display:inline-block;padding:4px 10px;border:1px solid ${border};border-radius:2px;font-family:'Cormorant Garamond',Georgia,serif;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;background:${bg};color:${color};">${val}${mark}</span>`;
+    return `<span style="display:inline-block;padding:0;background:transparent;font-family:Georgia,'Times New Roman',serif;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:${color};">${val}${mark}</span>`;
   };
 
   const esc = (s) => String(s || '')
@@ -740,10 +738,10 @@ function buildRsvpHtmlEmail({ headerLabel, subLabel, householdNames, timestamp, 
       </div>` : '';
 
   const subLabelHtml = subLabel
-    ? `<p style="margin:8px 0 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:13px;color:#f9f5ee;">${esc(subLabel)}</p>`
-    : `<p style="margin:8px 0 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:12px;color:#e9dcc2;">Submitted ${esc(timestamp)}</p>`;
+    ? `<p style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:13px;color:#ffffff;">${esc(subLabel)}</p>`
+    : `<p style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:12px;color:#ffffff;">Submitted ${esc(timestamp)}</p>`;
   const footerNote = isGuestCopy
-    ? 'Questions? Reach us at <a href="mailto:thekoschs@gmail.com" style="color:#40553f;">thekoschs@gmail.com</a>'
+    ? 'Questions? Reach us at <a href="mailto:semprevivo0402@gmail.com" style="color:#40553f;">semprevivo0402@gmail.com</a>'
     : `Submitted: ${esc(timestamp)}`;
 
   return `<!DOCTYPE html>
@@ -752,18 +750,18 @@ function buildRsvpHtmlEmail({ headerLabel, subLabel, householdNames, timestamp, 
 <body style="margin:0;padding:0;background:#edf4e8;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#edf4e8;padding:32px 16px;">
     <tr><td align="center">
-      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#f9f5ee;border:1px solid #c39d5a;box-shadow:inset 0 0 0 2px rgba(195,157,90,0.24);">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#f9f5ee;border:1px solid #e9dcc2;box-shadow:0 12px 32px rgba(45,61,47,0.05);border-radius:18px;overflow:hidden;">
 
         <!-- Header -->
-        <tr><td style="background:#40553f;padding:32px 32px 24px;text-align:center;">
-          <p style="margin:0 0 6px;font-family:'Cormorant Garamond',Georgia,serif;font-size:12px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:#e9dcc2;">Noel &amp; Peter · April 2, 2027</p>
-          <h1 style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:32px;font-weight:500;color:#f9f5ee;letter-spacing:0.04em;">${esc(headerLabel)}</h1>
+        <tr><td style="background:#6c8d67;padding:32px 32px 24px;text-align:center;border-bottom:1px solid #e9dcc2;">
+          <p style="margin:0 0 8px;font-family:Georgia,'Times New Roman',serif;font-size:12px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:#f9f5ee;line-height:1.5;">Noel &amp; Peter · April 2, 2027</p>
+          <h1 style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:32px;font-weight:600;color:#f9f5ee;letter-spacing:0.04em;line-height:1.1;">${esc(headerLabel)}</h1>
           ${subLabelHtml}
         </td></tr>
 
         <!-- Household name band -->
-        <tr><td style="background:#e9dcc2;padding:10px 32px;">
-          <p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:13px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#2d3d2f;">${esc(householdNames)}</p>
+        <tr><td style="background:#f5f0e6;padding:12px 32px;border-bottom:1px solid #e9dcc2;">
+          <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:13px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#40553f;line-height:1.5;">${esc(householdNames)}</p>
         </td></tr>
 
         <!-- Body -->
@@ -774,7 +772,7 @@ function buildRsvpHtmlEmail({ headerLabel, subLabel, householdNames, timestamp, 
 
         <!-- Footer -->
         <tr><td style="padding:20px 32px 28px;border-top:1px solid #e9dcc2;">
-          <p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:13px;color:#58635a;text-align:center;">${footerNote}</p>
+          <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:13px;color:#58635a;text-align:center;line-height:1.6;">${footerNote}</p>
         </td></tr>
 
       </table>
