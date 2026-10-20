@@ -16,11 +16,6 @@ function Registry() {
         <h1 className="page-hero-title">Our Registry</h1>
         <div className="page-hero-divider" />
         <div className="registry-content">
-          <p className="registry-intro">
-            Your presence at our wedding is the greatest gift, but if you'd like to give something, 
-            here are a few items we love:
-          </p>
-
           <div className="registry-grid">
             {registries.map((registry, idx) => (
               <a
