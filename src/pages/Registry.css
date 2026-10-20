@@ -43,7 +43,6 @@
 .registry-content {
   width: 100%;
   margin: 0 auto;
-  padding: clamp(1.5rem, 2vw, 2.5rem);
 }
 
 .registry-grid {
