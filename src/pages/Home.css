@@ -24,7 +24,7 @@
 }
 
 .invitation-kicker {
-  margin: 0 0 0.9rem;
+  margin: 0 0 1.1rem;
   font-family: var(--font-primary);
   font-size: 0.8rem;
   letter-spacing: 0.18em;
@@ -35,6 +35,7 @@
 
 .home-title {
   margin: 0;
+  padding: 20px;
   font-size: clamp(3.2rem, 5vw, 5.3rem);
   line-height: 0.9;
   font-weight: 400;
@@ -55,7 +56,7 @@
 }
 
 .home-subtitle {
-  margin-top: 0.9rem;
+  margin-top: 0.6rem;
   font-family: var(--font-primary);
   font-size: clamp(0.82rem, 1.2vw, 1rem);
   letter-spacing: 0.12em;
