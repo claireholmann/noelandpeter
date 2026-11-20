@@ -50,7 +50,7 @@
 .amp-symbol {
   display: inline-block;
   font-family: var(--font-script);
-  font-size: 0.9em;
+  font-size: 0.6em;
   color: var(--gold-400);
   margin: 0 0.2rem;
 }
@@ -125,8 +125,10 @@
   }
 
   .home-title {
-    font-size: clamp(2.1rem, 10.5vw, 3.1rem);
-    line-height: 1.35;
+    padding: 20px 0;
+    font-size: clamp(1.8rem, 10.5vw, 3.1rem);
+    line-height: 1.2;
+    white-space: nowrap;
   }
 
   .home-subtitle {
