@@ -1,15 +1,18 @@
 import { Link } from 'react-router-dom';
-import banff from '../assets/banff.jpg';
-import boston from '../assets/boston.jpg';
-import bulls from '../assets/bulls.jpg';
-import canada from '../assets/canada.jpg';
+import dog from '../assets/dog.jpeg';
+import lamp from '../assets/lamp.jpg';
+import belle from '../assets/belle.jpg';
+import fam from '../assets/fam.jpg';
+import hug from '../assets/hug.jpg';
 import './Home.css';
 
 const PHOTOS = [
-  { src: banff, alt: 'Noel and Peter in Banff' },
-  { src: boston, alt: 'Noel and Peter in Boston' },
-  { src: bulls, alt: 'Noel and Peter at a Bulls game' },
-  { src: canada, alt: 'Noel and Peter in Canada' },
+  { src: dog, alt: 'Noel and Peter with their dog' },
+  { src: lamp, alt: 'Noel and Peter at their engagement spot' },
+  { src: belle, alt: 'Noel, Peter and Belle' },
+  { src: fam, alt: 'Noel, Peter and Belle' },
+  { src: hug, alt: 'Noel and Peter hugging' },
+
 ];
 
 const LOOP_COPIES = 4;
