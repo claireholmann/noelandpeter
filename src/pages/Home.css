@@ -93,7 +93,7 @@
 .photo-slide {
   flex: 0 0 auto;
   width: auto;
-  height: clamp(220px, 56vw, 380px);
+  height: clamp(250px, 66vw, 380px);
 }
 
 @media (min-width: 600px) {
