@@ -87,6 +87,9 @@
 .photo-track {
   display: flex;
   width: max-content;
+}
+
+.photo-track.is-ready {
   animation: photo-scroll 40s linear infinite;
 }
 

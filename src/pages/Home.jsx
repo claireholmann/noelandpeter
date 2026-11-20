@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import dog from '../assets/dog.jpeg';
 import lamp from '../assets/lamp.jpg';
@@ -19,10 +20,22 @@ const LOOP_COPIES = 4;
 function PhotoCarousel() {
   // Photos are repeated so the scrolling track can loop seamlessly, even on wide screens
   const loopedPhotos = Array.from({ length: LOOP_COPIES }, () => PHOTOS).flat();
+  const [loadedCount, setLoadedCount] = useState(0);
+  const [timedOut, setTimedOut] = useState(false);
+
+  // The scroll distance is a percentage of the track width, which is only correct once the
+  // images have loaded. Starting the animation earlier makes it stall on mobile first loads.
+  const ready = timedOut || loadedCount >= loopedPhotos.length;
+  const markLoaded = () => setLoadedCount((count) => count + 1);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setTimedOut(true), 6000);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <div className="photo-carousel" role="region" aria-label="Photos of Noel and Peter">
-      <div className="photo-track">
+      <div className={`photo-track${ready ? ' is-ready' : ''}`}>
         {loopedPhotos.map((photo, i) => (
           <img
             key={i}
@@ -30,6 +43,8 @@ function PhotoCarousel() {
             alt={i < PHOTOS.length ? photo.alt : ''}
             aria-hidden={i >= PHOTOS.length}
             className="photo-slide"
+            onLoad={markLoaded}
+            onError={markLoaded}
           />
         ))}
       </div>
