@@ -36,8 +36,8 @@
 .home-title {
   margin: 0;
   padding: 20px;
-  font-size: clamp(3.2rem, 5vw, 5.3rem);
-  line-height: 0.9;
+  font-size: clamp(2.6rem, 4.2vw, 4.4rem);
+  line-height: 1.1;
   font-weight: 400;
   letter-spacing: 0.04em;
   color: var(--ink);
@@ -125,7 +125,8 @@
   }
 
   .home-title {
-    font-size: clamp(2.6rem, 13vw, 3.8rem);
+    font-size: clamp(2.1rem, 10.5vw, 3.1rem);
+    line-height: 1.35;
   }
 
   .home-subtitle {
