@@ -7,12 +7,11 @@ import hug from '../assets/hug.jpg';
 import './Home.css';
 
 const PHOTOS = [
+  { src: hug, alt: 'Noel and Peter hugging' },
+  { src: fam, alt: 'Noel, Peter and Belle' },
   { src: dog, alt: 'Noel and Peter with their dog' },
   { src: lamp, alt: 'Noel and Peter at their engagement spot' },
   { src: belle, alt: 'Noel, Peter and Belle' },
-  { src: fam, alt: 'Noel, Peter and Belle' },
-  { src: hug, alt: 'Noel and Peter hugging' },
-
 ];
 
 const LOOP_COPIES = 4;
