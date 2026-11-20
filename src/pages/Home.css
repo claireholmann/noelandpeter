@@ -105,12 +105,6 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .photo-track {
-    animation: none;
-  }
-}
-
 
 .home-nav {
   display: flex;
