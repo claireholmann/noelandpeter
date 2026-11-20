@@ -12,9 +12,11 @@ const PHOTOS = [
   { src: canada, alt: 'Noel and Peter in Canada' },
 ];
 
+const LOOP_COPIES = 4;
+
 function PhotoCarousel() {
-  // Photos are doubled so the scrolling track can loop seamlessly
-  const loopedPhotos = [...PHOTOS, ...PHOTOS];
+  // Photos are repeated so the scrolling track can loop seamlessly, even on wide screens
+  const loopedPhotos = Array.from({ length: LOOP_COPIES }, () => PHOTOS).flat();
 
   return (
     <div className="photo-carousel" role="region" aria-label="Photos of Noel and Peter">
