@@ -1,18 +1,20 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import dog from '../assets/dog.jpeg';
 import lamp from '../assets/lamp.jpg';
 import belle from '../assets/belle.jpg';
 import fam from '../assets/fam.jpg';
 import hug from '../assets/hug.jpg';
+import look from '../assets/look.JPG';
+import armhold from '../assets/armhold.JPG';
 import './Home.css';
 
 const PHOTOS = [
   { src: hug, alt: 'Noel and Peter hugging' },
   { src: fam, alt: 'Noel, Peter and Belle' },
-  { src: dog, alt: 'Noel and Peter with their dog' },
+  { src: armhold, alt: 'Noel and Peter holding arms' },
   { src: lamp, alt: 'Noel and Peter at their engagement spot' },
   { src: belle, alt: 'Noel, Peter and Belle' },
+  { src: look, alt: 'Noel and Peter looking at each other' },
 ];
 
 const LOOP_COPIES = 4;

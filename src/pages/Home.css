@@ -101,7 +101,7 @@
 
 @media (min-width: 600px) {
   .photo-slide {
-    height: clamp(180px, 50vh, 300px);
+    height: clamp(220px, 55vh, 380px);
   }
 }
 
