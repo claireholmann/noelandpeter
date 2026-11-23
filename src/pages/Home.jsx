@@ -9,11 +9,11 @@ import armhold from '../assets/armhold.JPG';
 import './Home.css';
 
 const PHOTOS = [
-  { src: hug, alt: 'Noel and Peter hugging' },
   { src: fam, alt: 'Noel, Peter and Belle' },
+  { src: hug, alt: 'Noel and Peter hugging' },
   { src: armhold, alt: 'Noel and Peter holding arms' },
-  { src: belle, alt: 'Noel, Peter and Belle' },
   { src: lamp, alt: 'Noel and Peter at their engagement spot' },
+  { src: belle, alt: 'Noel, Peter and Belle' },
   { src: look, alt: 'Noel and Peter looking at each other' },
 ];
 
